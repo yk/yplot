@@ -7,6 +7,9 @@ import numpy as np
 from math import atan2,degrees
 from matplotlib import pyplot as plt
 import matplotlib
+from glob import glob
+import sh
+import os
 
 matplotlib.rc('font', family='sans-serif') 
 matplotlib.rc('font', serif='Calibri') 
@@ -18,12 +21,24 @@ def read_tfevents(fn):
     return s
 
 
-def extract_values(summaries, tag_or_tags, get_val_fn):
-    if isinstance(tag_or_tags, list):
-        return extract_multiple_values(summaries, tag_or_tags, get_val_fn)
-    return extract_multiple_values(summaries, [tag_or_tags], get_val_fn)[0]
+def find_by_cmdlog(configs_dir, *cmd_log_entries):
+    cfgs = []
+    for c in glob(configs_dir + '/*'):
+        c = os.path.join(configs_dir, c)
+        clfn = os.path.join(c, 'cmdlog.txt')
+        with open(clfn) as f:
+            cmdlog = f.read()
+            if all(cle in cmdlog for cle in cmd_log_entries):
+                cfgs.append(c)
+    return cfgs
 
-def extract_multiple_values(summaries, tags, get_val_fn):
+
+def extract_values(summaries, tag_or_tags, get_val_fn, with_steps=False):
+    if isinstance(tag_or_tags, list):
+        return extract_multiple_values(summaries, tag_or_tags, get_val_fn, with_steps=with_steps)
+    return extract_multiple_values(summaries, [tag_or_tags], get_val_fn, with_steps=with_steps)[0]
+
+def extract_multiple_values(summaries, tags, get_val_fn, with_steps=False):
     tagset = set(tags)
     steps_values = dict((tag, ([], [])) for tag in tagset)
     for s in summaries:
@@ -32,15 +47,17 @@ def extract_multiple_values(summaries, tags, get_val_fn):
                 steps, values = steps_values[v.tag]
                 steps.append(s.step)
                 values.append(get_val_fn(v))
+    if not with_steps:
+        steps_values = {k: v[1] for k, v in steps_values.items()}
     return [steps_values[tag] for tag in tags]
 
 
-def extract_scalar(summaries, tag):
-    return extract_values(summaries, tag, lambda v: v.simple_value)
+def extract_scalar(summaries, tag, with_steps=False):
+    return extract_values(summaries, tag, lambda v: v.simple_value, with_steps=with_steps)
 
 
-def extract_image(summaries, tag):
-    return extract_values(summaries, tag, lambda v: v.image.encoded_image_string)
+def extract_image(summaries, tag, with_steps=False):
+    return extract_values(summaries, tag, lambda v: v.image.encoded_image_string, with_steps=with_steps)
 
 
 def string_to_image(encoded_string):
