@@ -21,6 +21,10 @@ def read_tfevents(fn):
     return s
 
 
+def get_all_tags(events):
+    return set(e.summary.value[0].tag for e in events)
+
+
 def find_by_cmdlog(configs_dir, *cmd_log_entries):
     cfgs = []
     for c in glob(configs_dir + '/*'):
