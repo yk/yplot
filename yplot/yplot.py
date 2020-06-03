@@ -17,7 +17,7 @@ matplotlib.rc('text', usetex='false')
 matplotlib.rc('image', cmap='gist_earth')
 
 def read_tfevents(fn):
-    s = list(tf.train.summary_iterator(fn))[1:]
+    s = list(tf.compat.v1.train.summary_iterator(fn))[1:]
     return s
 
 
